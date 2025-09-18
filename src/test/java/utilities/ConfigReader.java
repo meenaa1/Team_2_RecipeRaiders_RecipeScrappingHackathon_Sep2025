@@ -1,40 +1,28 @@
 package utilities;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 
 public class ConfigReader {
+	private static Properties prop;
 
-	private static String browserType = null;
+	public Properties init_prop() {
+		prop = new Properties();
 
-	public static Properties initializeprop() {
-		Properties prop = new Properties();
-		File profile = new File(System.getProperty("user.dir") + "/src/test/resources/Config.properties");
-
-		try (FileInputStream fis = new FileInputStream(profile)) {
-			prop.load(fis);
+		try {
+			FileInputStream ip = new FileInputStream("src/test/resources/config/config.properties");
+			prop.load(ip);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			e.printStackTrace();
 		}
+
 		return prop;
 	}
 
-	public static void setBrowserType(String browser) {
-		browserType = browser;
-	}
-
-	public static String getBrowserType() {
-		if (browserType != null) {
-			return browserType;
-		} else {
-			throw new RuntimeException(
-					"Browser not specified. Please provide it in the testng.xml or as a Maven parameter.");
-		}
-	}
-
+	public static String getProperty(String key){ return prop.getProperty(key);}
 }
