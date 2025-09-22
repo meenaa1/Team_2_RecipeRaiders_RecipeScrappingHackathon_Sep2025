@@ -1,7 +1,9 @@
 package pages;
 
 import commons.Recipe;
+
 import org.openqa.selenium.By;
+
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.*;
@@ -37,8 +39,8 @@ public class RecipeDetailsPage {
     @FindBy(xpath = "//figure[@class='table']")
     private WebElement nutrientRows;
 
-    @FindBy(xpath = "//span[contains(@class,'category')]")
-    private WebElement recipeCategory;
+    @FindBy(xpath = "//ul[@class='tags-list']/li/a")
+    private List<WebElement> recipeCategory;
 
     @FindBy(css = "p:nth-child(1) span:nth-child(3) a:nth-child(1)")
     private WebElement foodCategory;
@@ -138,7 +140,7 @@ public class RecipeDetailsPage {
         r.Preparation_method = joinTexts(prepSteps, " ", "Preparation_method");
         r.Nutrient_values    = getNutritionValues("|");
         r.Recipe_URL         = driver.getCurrentUrl();
-        r.Recipe_Category    = getText(recipeCategory, "Recipe_Category");
+        r.Recipe_Category    = getRecipeCategories();
         r.Food_Category      = getText(foodCategory, "Food_Category");
         r.Tag                = getText(tag, "Tag");
         r.No_of_servings     = getText(servings, "No_of_servings");
@@ -146,4 +148,19 @@ public class RecipeDetailsPage {
 
         return r;
     }
-}
+    
+    //Recipe category  
+    private String getRecipeCategories() 
+    {
+
+        for (WebElement el : recipeCategory) {
+            String text = el.getText().trim().toLowerCase();
+            if (text.contains("breakfast")||text.contains("lunch")||text.contains("dinner")||text.contains("snack"))
+            {
+            	return text;
+            }
+        }
+        return "other";
+    }
+  }
+

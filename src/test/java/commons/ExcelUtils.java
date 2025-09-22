@@ -8,6 +8,11 @@ import java.io.InputStream;
 import java.util.*;
 
 public class ExcelUtils {
+<<<<<<< HEAD
+	
+	 private static String rulesExcelPath = "testData/IngredientsAndComorbidities-ScrapperHackathon_Team2_RR.xlsx";
+=======
+>>>>>>> 3abfbdda3d044fdde8b497db9a17432e9f77650b
 
     private static String ExcelPath = "TestData/IngredientsAndComorbidities-ScrapperHackathon_Team2_RR.xlsx";
 

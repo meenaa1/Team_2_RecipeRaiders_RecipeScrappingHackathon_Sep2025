@@ -2,8 +2,9 @@ package commons;
 
 import java.sql.*;
 
+
 public class DbManager {
-    private Connection conn;
+    private static Connection conn;
 
     public DbManager(ConfigReader cfg) throws SQLException {
         String url = "jdbc:postgresql://" + cfg.dbHost + ":" + cfg.dbPort + "/" + cfg.dbName;
@@ -71,7 +72,7 @@ public class DbManager {
             return rs.next();
         }
     }
-
+    
     public void close() throws SQLException {
         if (conn != null) conn.close();
     }
@@ -88,5 +89,6 @@ public class DbManager {
         dropTableIfExists(tableName);
         createTableIfNotExists(tableName);
     }
-
+    
+    
 }
