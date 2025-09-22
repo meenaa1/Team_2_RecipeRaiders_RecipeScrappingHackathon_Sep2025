@@ -3,16 +3,16 @@
 <suite name="Failed suite [Default suite]" guice-stage="DEVELOPMENT">
   <test thread-count="5" name="Default test(failed)">
     <classes>
-      <class name="tests.RecipeScraperTest">
+      <class name="tests.RecipeScraperOptimizedTest">
         <methods>
           <include name="tearDownClass"/>
           <include name="setUpMethod"/>
           <include name="setup"/>
+          <include name="scrapeDiet" invocation-numbers="0 1"/>
           <include name="tearDownMethod"/>
           <include name="setUpClass"/>
-          <include name="scrapeDiet"/>
         </methods>
-      </class> <!-- tests.RecipeScraperTest -->
+      </class> <!-- tests.RecipeScraperOptimizedTest -->
     </classes>
   </test> <!-- Default test(failed) -->
 </suite> <!-- Failed suite [Default suite] -->
