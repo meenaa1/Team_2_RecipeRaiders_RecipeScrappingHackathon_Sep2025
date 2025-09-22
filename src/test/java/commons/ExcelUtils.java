@@ -9,7 +9,7 @@ import java.util.*;
 
 public class ExcelUtils {
 	
-	 private static String rulesExcelPath = "testData/IngredientsAndComorbidities-ScrapperHackathon.xlsx";
+	 private static String rulesExcelPath = "testData/IngredientsAndComorbidities-ScrapperHackathon_Team2_RR.xlsx";
 
 	    public static List<Map<String, String>> getData(String sheetName) throws IOException {
 	        List<Map<String, String>> excelData = new ArrayList<>();
