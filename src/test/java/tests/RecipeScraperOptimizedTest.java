@@ -13,9 +13,11 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 public class RecipeScraperOptimizedTest extends BaseTest {
 
+    private static final Logger log = Logger.getLogger(RecipeDetailsPage.class.getName());
     private ExcelUtils.DietRules lchfRules, lfvRules;
     private Set<String> visitedRecipes = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final AtomicInteger scrapedCount = new AtomicInteger(0);

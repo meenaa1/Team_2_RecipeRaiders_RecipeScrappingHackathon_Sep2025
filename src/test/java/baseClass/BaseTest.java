@@ -9,7 +9,7 @@ import utilities.BaseLogger;
 
 import java.sql.SQLException;
 
-public class BaseTest extends BaseLogger {
+public class BaseTest {
 
     protected static DbManager db;       
     protected static ConfigReader cfg;    
