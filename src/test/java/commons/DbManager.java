@@ -10,6 +10,13 @@ public class DbManager {
         conn = DriverManager.getConnection(url, cfg.dbUser, cfg.dbPassword);
     }
 
+    public void dropTableIfExists(String tableName) throws SQLException {
+        String sql = "DROP TABLE IF EXISTS " + tableName;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        }
+    }
+
     // Create tables with full schema
     public void createTableIfNotExists(String tableName) throws SQLException {
         String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
@@ -76,4 +83,10 @@ public class DbManager {
             return rs.getInt(1);
         }
     }
+    // Drop and create table in one method
+    public void resetTable(String tableName) throws SQLException {
+        dropTableIfExists(tableName);
+        createTableIfNotExists(tableName);
+    }
+
 }

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
-<suite name="Recipe Raiders">
+<suite name="Recipe Raiders" parallel="tests" thread-count="5">
 
 	<test name="ChromeTest">
 		<parameter name="browser" value="chrome" />
 		<classes>
-			<class name="tests.RecipeScrapperTest" />
+			<class name="tests.RecipeScraperOptimizedTest" />
 		</classes>
 
-	</test> <!--
-	Test -->
-</suite> <!--
-Suite -->
+	</test>
+
+</suite>
+

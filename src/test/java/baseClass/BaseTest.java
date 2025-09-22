@@ -5,10 +5,11 @@ import commons.ConfigReader;
 import commons.DbManager;
 import org.openqa.selenium.WebDriver;
 import org.testng.annotations.*;
+import utilities.BaseLogger;
 
 import java.sql.SQLException;
 
-public class BaseTest {
+public class BaseTest extends BaseLogger {
 
     protected static DbManager db;       
     protected static ConfigReader cfg;    

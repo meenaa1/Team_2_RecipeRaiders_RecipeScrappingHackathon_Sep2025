@@ -6,9 +6,15 @@ import java.util.Properties;
 
 public class ConfigReader {
     public String dbHost, dbName, dbUser, dbPassword, excelPath;
-    public int dbPort;
+    public int dbPort, threadPoolSize;
     public String scraperLCHFStartUrl, scraperLFVStartUrl;
-    public boolean headless; 
+    public boolean headless;
+    // New fields for scraper customization
+    public String scraperMode;          // ALL, FIRST_N, KEYWORD, SINGLE_URL
+    public int scraperLimit;            // for FIRST_N
+    public String scraperKeyword;       // for KEYWORD
+    public String scraperSingleRecipeUrl; // for SINGLE_URL
+
 
     public static ConfigReader load() throws IOException {
         Properties prop = new Properties();
@@ -27,9 +33,17 @@ public class ConfigReader {
 
         cfg.scraperLCHFStartUrl = prop.getProperty("scraperLCHFStartUrl");
         cfg.scraperLFVStartUrl = prop.getProperty("scraperLFVStartUrl");
-       
+        cfg.threadPoolSize = Integer.parseInt(prop.getProperty("scraper.threadPoolSize", "5"));
         // Read headless mode, default = false
         cfg.headless = Boolean.parseBoolean(prop.getProperty("headless", "false"));
+
+        // ---------- NEW CONFIG OPTIONS ----------
+        cfg.scraperMode = prop.getProperty("scraper.mode", "ALL").toUpperCase();
+        cfg.scraperLimit = Integer.parseInt(prop.getProperty("scraper.limit", "5"));
+        cfg.scraperKeyword = prop.getProperty("scraper.keyword", "");
+        cfg.scraperSingleRecipeUrl = prop.getProperty("scraper.singleRecipeUrl", "");
+
+
 
         return cfg;
     }
