@@ -5,7 +5,7 @@ import commons.ConfigReader;
 import commons.DbManager;
 import org.openqa.selenium.WebDriver;
 import org.testng.annotations.*;
-import utilities.BaseLogger;
+
 
 import java.sql.SQLException;
 

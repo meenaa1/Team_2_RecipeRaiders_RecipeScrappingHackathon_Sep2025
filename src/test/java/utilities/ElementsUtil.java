@@ -60,6 +60,13 @@ public class ElementsUtil {
         if (alert != null) alert.accept();
     }
 
-
+    public boolean waitForElementToDisappear(By locator, int timeoutSeconds) {
+        try {
+            WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
+            return shortWait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
+        } catch (TimeoutException e) {
+            return false; // still visible
+        }
+    }
 
 }
