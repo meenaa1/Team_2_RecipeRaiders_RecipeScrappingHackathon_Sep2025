@@ -1,6 +1,7 @@
 package pages;
 
 import commons.Recipe;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.*;
@@ -33,13 +34,13 @@ public class RecipeDetailsPage {
     @FindBy(id = "methods")
     private List<WebElement> prepSteps;
 
-    @FindBy(id = "rcpnutrients")
-    private List<WebElement> nutrientRows;
+    @FindBy(xpath = "//figure[@class='table']")
+    private WebElement nutrientRows;
 
     @FindBy(xpath = "//span[contains(@class,'category')]")
     private WebElement recipeCategory;
 
-    @FindBy(xpath = "//span[contains(@class,'food-category')]")
+    @FindBy(css = "p:nth-child(1) span:nth-child(3) a:nth-child(1)")
     private WebElement foodCategory;
 
     @FindBy(xpath = "//ul[@class='tags-list']/li/a")
@@ -88,6 +89,43 @@ public class RecipeDetailsPage {
         return String.join(delimiter, getTextList(elements, fieldName));
     }
 
+    // Fetch nutrition table and join as a single string with delimiter
+    // Fetch nutrition table and join as a single string with delimiter
+    public String getNutritionValues(String delimiter) {
+        StringBuilder nutritionBuilder = new StringBuilder();
+
+        try {
+            // Locate the nutrition table
+            WebElement nutritionTable = nutrientRows;
+            List<WebElement> rows = nutritionTable.findElements(By.tagName("tr"));
+
+            for (WebElement row : rows) {
+                List<WebElement> cols = row.findElements(By.tagName("td"));
+                if (cols.size() >= 2) {
+                    String nutrient = cols.get(0).getText().trim();
+                    String value = cols.get(1).getText().trim();
+                    nutritionBuilder.append(nutrient)
+                            .append(":")
+                            .append(value)
+                            .append(delimiter);
+                }
+            }
+
+            // Remove trailing delimiter
+            if (nutritionBuilder.length() > 0) {
+                nutritionBuilder.setLength(nutritionBuilder.length() - delimiter.length());
+            }
+
+        } catch (Exception e) {
+            logger.warning("Nutrition table not found or error occurred: " + e.getMessage());
+        }
+
+        return nutritionBuilder.toString();
+    }
+
+
+
+
     // ----------------- Scraper -----------------
     public Recipe scrapeRecipe() {
         Recipe r = new Recipe();
@@ -98,7 +136,7 @@ public class RecipeDetailsPage {
         r.Cooking_Time       = getText(cookingTime, "Cooking_Time");
         r.Recipe_Description = getText(recipeDescription, "Recipe_Description");
         r.Preparation_method = joinTexts(prepSteps, " ", "Preparation_method");
-        r.Nutrient_values    = joinTexts(nutrientRows, " ", "Nutrient_values");
+        r.Nutrient_values    = getNutritionValues("|");
         r.Recipe_URL         = driver.getCurrentUrl();
         r.Recipe_Category    = getText(recipeCategory, "Recipe_Category");
         r.Food_Category      = getText(foodCategory, "Food_Category");
