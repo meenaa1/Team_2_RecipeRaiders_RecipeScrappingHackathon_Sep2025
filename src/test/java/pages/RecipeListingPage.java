@@ -91,11 +91,4 @@ public class RecipeListingPage {
             return false;
         }
     }
-<<<<<<< HEAD
-    
-    
 }
-=======
-
-}
->>>>>>> 3abfbdda3d044fdde8b497db9a17432e9f77650b
