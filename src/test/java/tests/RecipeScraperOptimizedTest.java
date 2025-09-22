@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 
 public class RecipeScraperOptimizedTest extends BaseTest {
 
-    private static final Logger log = Logger.getLogger(RecipeDetailsPage.class.getName());
+    private static final Logger log = Logger.getLogger(RecipeScraperOptimizedTest.class.getName());
     private ExcelUtils.DietRules lchfRules, lfvRules;
     private Set<String> visitedRecipes = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final AtomicInteger scrapedCount = new AtomicInteger(0);
