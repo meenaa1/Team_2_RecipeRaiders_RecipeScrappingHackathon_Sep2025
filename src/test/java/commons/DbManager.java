@@ -2,12 +2,20 @@ package commons;
 
 import java.sql.*;
 
+
 public class DbManager {
-    private Connection conn;
+    private static Connection conn;
 
     public DbManager(ConfigReader cfg) throws SQLException {
         String url = "jdbc:postgresql://" + cfg.dbHost + ":" + cfg.dbPort + "/" + cfg.dbName;
         conn = DriverManager.getConnection(url, cfg.dbUser, cfg.dbPassword);
+    }
+
+    public void dropTableIfExists(String tableName) throws SQLException {
+        String sql = "DROP TABLE IF EXISTS " + tableName;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        }
     }
 
     // Create tables with full schema
@@ -64,7 +72,7 @@ public class DbManager {
             return rs.next();
         }
     }
-
+    
     public void close() throws SQLException {
         if (conn != null) conn.close();
     }
@@ -76,4 +84,11 @@ public class DbManager {
             return rs.getInt(1);
         }
     }
+    // Drop and create table in one method
+    public void resetTable(String tableName) throws SQLException {
+        dropTableIfExists(tableName);
+        createTableIfNotExists(tableName);
+    }
+    
+    
 }
