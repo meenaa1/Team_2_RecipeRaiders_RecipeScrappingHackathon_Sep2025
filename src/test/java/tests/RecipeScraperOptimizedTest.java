@@ -76,9 +76,9 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         // Summary
         String addTable = dietType.equals("LCHF") ? "LCHF_add" : "LFV_add";
         String elimTable = dietType.equals("LCHF") ? "LCHF_elimination" : "LFV_elimination";
-        System.out.println("[" + dietType + "] Summary:");
-        System.out.println(addTable + ": " + db.getRowCount(addTable));
-        System.out.println(elimTable + ": " + db.getRowCount(elimTable));
+        log.info("[" + dietType + "] Summary:");
+        log.info(addTable + ": " + db.getRowCount(addTable));
+        log.info(elimTable + ": " + db.getRowCount(elimTable));
     }
 
     // ---------------- Single Recipe Mode ----------------
@@ -121,9 +121,9 @@ public class RecipeScraperOptimizedTest extends BaseTest {
                         ? recipeUrls.subList(0, remaining)
                         : recipeUrls;
 
-                System.out.println("Found " + batch.size() + " recipes on this page...");
+             log.info("Found " + batch.size() + " recipes on this page...");
                 totalScraped += runScrapeBatch(batch, rules, dietType, visitedRecipes);
-                System.out.println("Total scraped so far = " + totalScraped);
+                log.info("Total scraped so far = " + totalScraped);
             }
 
             // Stop if reached limit
@@ -134,7 +134,7 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         }
 
         listingDriver.quit();
-        log.info("✅ Finished FIRST_N mode. Total recipes scraped = " + totalScraped);
+        log.info("Finished FIRST_N mode. Total recipes scraped = " + totalScraped);
     }
 
     // ---------------- ALL Mode ----------------
@@ -158,13 +158,13 @@ public class RecipeScraperOptimizedTest extends BaseTest {
             if (!recipeUrls.isEmpty()) {
                 System.out.println("Found " + recipeUrls.size() + " recipes on this page...");
                 totalScraped += runScrapeBatch(recipeUrls, rules, dietType, visitedRecipes);
-                System.out.println("Total scraped so far = " + totalScraped);
+                log.info("Total scraped so far = " + totalScraped);
             }
             hasNextPage = listingPage.goToNextPage();
         }
 
         listingDriver.quit();
-       log.info("✅ Finished ALL mode. Total recipes scraped = " + totalScraped);
+       log.info("Finished ALL mode. Total recipes scraped = " + totalScraped);
     }
 
     // ---------------- Keyword Mode ----------------
@@ -259,7 +259,7 @@ public class RecipeScraperOptimizedTest extends BaseTest {
                     try {
                         scrapeRecipeTask(url, rules, dietType);
                         batchCount.incrementAndGet();
-                        System.out.println("Scraped: " + url);
+                        log.info("Scraped: " + url);
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
