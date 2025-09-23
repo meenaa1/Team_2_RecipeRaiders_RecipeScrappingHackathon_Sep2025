@@ -60,7 +60,7 @@ public class RecipeDetailsPage {
         PageFactory.initElements(driver, this);
     }
 
-    // ----------------- Helper Methods -----------------
+   
     private String getText(WebElement element, String fieldName) {
         if (element == null) {
             logger.warning("Element not found: " + fieldName);
@@ -91,7 +91,7 @@ public class RecipeDetailsPage {
         return String.join(delimiter, getTextList(elements, fieldName));
     }
 
-    // Fetch nutrition table and join as a single string with delimiter
+    
     // Fetch nutrition table and join as a single string with delimiter
     public String getNutritionValues(String delimiter) {
         StringBuilder nutritionBuilder = new StringBuilder();

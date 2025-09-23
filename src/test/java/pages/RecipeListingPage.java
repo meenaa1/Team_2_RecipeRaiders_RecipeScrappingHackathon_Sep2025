@@ -2,11 +2,7 @@ package pages;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.*;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import utilities.ElementsUtil;
-
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -59,18 +55,16 @@ public class RecipeListingPage {
                     .filter(url -> url != null && !visitedRecipes.contains(url))
                     .collect(Collectors.toList());
         } catch (TimeoutException e) {
-            System.out.println("⚠️ No recipe links found on this page.");
+            System.out.println("No recipe links found on this page.");
             return List.of();
         }
     }
 
-    /**
-     * Navigate to the next page if available
-     */
+    
     public boolean goToNextPage() {
         try {
             if (!elementsUtil.isElementDisplayed(nextBtnLocator)) {
-                System.out.println("➡️ No Next button. Stopping pagination.");
+                System.out.println("No Next button. Stopping pagination.");
                 return false;
             }
 
@@ -87,7 +81,7 @@ public class RecipeListingPage {
             return true;
 
         } catch (Exception e) {
-            System.out.println("⚠️ Pagination error: " + e.getMessage());
+            System.out.println("Pagination error: " + e.getMessage());
             return false;
         }
     }
