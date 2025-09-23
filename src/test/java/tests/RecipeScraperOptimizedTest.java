@@ -4,22 +4,29 @@ import baseClass.BaseTest;
 import commons.BrowserFactory;
 import commons.ExcelUtils;
 import commons.Recipe;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.testng.annotations.*;
 import pages.RecipeDetailsPage;
 import pages.RecipeListingPage;
+import utilities.ElementsUtil;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 public class RecipeScraperOptimizedTest extends BaseTest {
+    private static final Logger log = LogManager.getLogger(RecipeScraperOptimizedTest.class.getName());
 
-    private static final Logger log = Logger.getLogger(RecipeScraperOptimizedTest.class.getName());
     private ExcelUtils.DietRules lchfRules, lfvRules;
-    private Set<String> visitedRecipes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    //  Separate visited sets for each diet
+    private Set<String> visitedRecipesLCHF = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private Set<String> visitedRecipesLFV = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
     private final AtomicInteger scrapedCount = new AtomicInteger(0);
 
     private enum ScraperMode { ALL, FIRST_N, KEYWORD, SINGLE_URL }
@@ -27,10 +34,11 @@ public class RecipeScraperOptimizedTest extends BaseTest {
 
     @BeforeClass
     public void setup() throws Exception {
+        // Load diet rules
         lchfRules = ExcelUtils.loadDietRules("Final list for LCHFElimination");
         lfvRules = ExcelUtils.loadDietRules("Final list for LFV Elimination");
 
-        // Reset all tables
+        // Reset DB tables
         db.resetTable("LCHF_add");
         db.resetTable("LCHF_elimination");
         db.resetTable("LFV_add");
@@ -47,34 +55,35 @@ public class RecipeScraperOptimizedTest extends BaseTest {
     @DataProvider(name = "dietData", parallel = true)
     public Object[][] dietData() {
         return new Object[][]{
-                {"LCHF", cfg.scraperLCHFStartUrl, lchfRules},
-                {"LFV", cfg.scraperLFVStartUrl, lfvRules}
+                {"LCHF", cfg.scraperLCHFStartUrl, lchfRules, visitedRecipesLCHF},
+                {"LFV", cfg.scraperLFVStartUrl, lfvRules, visitedRecipesLFV}
         };
     }
 
     @Test(dataProvider = "dietData")
-    public void scrapeDiet(String dietType, String startUrl, ExcelUtils.DietRules rules)
+    public void scrapeDiet(String dietType, String startUrl, ExcelUtils.DietRules rules, Set<String> visitedRecipes)
             throws SQLException, ExecutionException, InterruptedException {
 
         visitedRecipes.clear();
 
         switch (mode) {
-            case ALL -> runScraperAllParallel(startUrl, rules, dietType);
-            case FIRST_N -> runScraperLimitedParallel(startUrl, rules, dietType, cfg.scraperLimit);
-            case KEYWORD -> runScraperByKeywordParallel(startUrl, rules, dietType, cfg.scraperKeyword);
+            case ALL -> runScraperAllParallel(startUrl, rules, dietType, visitedRecipes);
+            case FIRST_N -> runScraperLimitedParallel(startUrl, rules, dietType, cfg.scraperLimit, visitedRecipes);
+            case KEYWORD -> runScraperByKeywordParallel(startUrl, rules, dietType, cfg.scraperKeyword, visitedRecipes);
             case SINGLE_URL -> runScraperForSingleRecipe(cfg.scraperSingleRecipeUrl, rules, dietType);
         }
 
+        // Summary
         String addTable = dietType.equals("LCHF") ? "LCHF_add" : "LFV_add";
         String elimTable = dietType.equals("LCHF") ? "LCHF_elimination" : "LFV_elimination";
-
         System.out.println("[" + dietType + "] Summary:");
         System.out.println(addTable + ": " + db.getRowCount(addTable));
         System.out.println(elimTable + ": " + db.getRowCount(elimTable));
     }
 
-    // ---------------- Single Recipe ----------------
-    private void runScraperForSingleRecipe(String recipeUrl, ExcelUtils.DietRules rules, String dietType) throws SQLException {
+    // ---------------- Single Recipe Mode ----------------
+    private void runScraperForSingleRecipe(String recipeUrl, ExcelUtils.DietRules rules, String dietType)
+            throws SQLException {
         WebDriver driver = BrowserFactory.createDriver(cfg.headless);
         try {
             driver.get(recipeUrl);
@@ -86,13 +95,15 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         }
     }
 
-    // ---------------- Parallel FIRST_N Mode ----------------
-    private void runScraperLimitedParallel(String startUrl, ExcelUtils.DietRules rules, String dietType, int limit)
+    // ---------------- FIRST_N Mode ----------------
+    private void runScraperLimitedParallel(String startUrl, ExcelUtils.DietRules rules, String dietType, int limit,
+                                           Set<String> visitedRecipes)
             throws SQLException, InterruptedException, ExecutionException {
 
         WebDriver listingDriver = BrowserFactory.createDriver(cfg.headless);
         listingDriver.get(startUrl);
         RecipeListingPage listingPage = new RecipeListingPage(listingDriver);
+
         List<String> recipeUrls = listingPage.getRecipeUrls(new ArrayList<>(visitedRecipes));
         BrowserFactory.quitDriver();
 
@@ -102,49 +113,9 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         int count = 0;
         for (String url : recipeUrls) {
             if (count >= limit) break;
-            if (visitedRecipes.contains(url)) continue;
-            visitedRecipes.add(url);
+            if (!visitedRecipes.add(url)) continue;
             count++;
 
-            String finalUrl = url;
-            futures.add(executor.submit(() -> {
-                try {
-                    scrapeRecipeTask(finalUrl, rules, dietType);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }));
-        }
-
-        for (Future<?> f : futures) f.get();
-        executor.shutdown();
-        executor.awaitTermination(1, TimeUnit.HOURS);
-    }
-
-    // ---------------- Parallel ALL Mode ----------------
-    private void runScraperAllParallel(String startUrl, ExcelUtils.DietRules rules, String dietType)
-            throws SQLException, InterruptedException, ExecutionException {
-
-        WebDriver listingDriver = BrowserFactory.createDriver(cfg.headless);
-        listingDriver.get(startUrl);
-        RecipeListingPage listingPage = new RecipeListingPage(listingDriver);
-
-        boolean hasNextPage = true;
-        List<String> allRecipeUrls = new ArrayList<>();
-        while (hasNextPage) {
-            List<String> recipeUrls = listingPage.getRecipeUrls(new ArrayList<>(visitedRecipes));
-            for (String url : recipeUrls) {
-                if (visitedRecipes.contains(url)) continue;
-                visitedRecipes.add(url);
-                allRecipeUrls.add(url);
-            }
-            hasNextPage = listingPage.goToNextPage();
-        }
-        BrowserFactory.quitDriver();
-
-        ExecutorService executor = Executors.newFixedThreadPool(cfg.threadPoolSize);
-        List<Future<?>> futures = new ArrayList<>();
-        for (String url : allRecipeUrls) {
             futures.add(executor.submit(() -> {
                 try {
                     scrapeRecipeTask(url, rules, dietType);
@@ -159,8 +130,39 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         executor.awaitTermination(1, TimeUnit.HOURS);
     }
 
-    // ---------------- Parallel KEYWORD Mode ----------------
-    private void runScraperByKeywordParallel(String startUrl, ExcelUtils.DietRules rules, String dietType, String keyword)
+    // ---------------- ALL Mode ----------------
+    private void runScraperAllParallel(String startUrl, ExcelUtils.DietRules rules, String dietType,
+                                       Set<String> visitedRecipes)
+            throws SQLException, InterruptedException {
+
+        WebDriver listingDriver = BrowserFactory.createDriver(cfg.headless);
+        listingDriver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(40));
+        listingDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+
+        ElementsUtil util = new ElementsUtil(listingDriver);
+        listingDriver.get(startUrl);
+        RecipeListingPage listingPage = new RecipeListingPage(listingDriver);
+
+        boolean hasNextPage = true;
+        int totalScraped = 0;
+
+        while (hasNextPage) {
+            List<String> recipeUrls = listingPage.getRecipeUrls(new ArrayList<>(visitedRecipes));
+            if (!recipeUrls.isEmpty()) {
+                System.out.println("Found " + recipeUrls.size() + " recipes on this page...");
+                totalScraped += runScrapeBatch(recipeUrls, rules, dietType, visitedRecipes);
+                System.out.println("Total scraped so far = " + totalScraped);
+            }
+            hasNextPage = listingPage.goToNextPage();
+        }
+
+        listingDriver.quit();
+        System.out.println("✅ Finished ALL mode. Total recipes scraped = " + totalScraped);
+    }
+
+    // ---------------- Keyword Mode ----------------
+    private void runScraperByKeywordParallel(String startUrl, ExcelUtils.DietRules rules, String dietType,
+                                             String keyword, Set<String> visitedRecipes)
             throws SQLException, InterruptedException, ExecutionException {
 
         WebDriver listingDriver = BrowserFactory.createDriver(cfg.headless);
@@ -172,10 +174,9 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         while (hasNextPage) {
             List<String> recipeUrls = listingPage.getRecipeUrls(new ArrayList<>(visitedRecipes));
             for (String url : recipeUrls) {
-                if (!url.toLowerCase().contains(keyword.toLowerCase())) continue;
-                if (visitedRecipes.contains(url)) continue;
-                visitedRecipes.add(url);
-                keywordUrls.add(url);
+                if (url.toLowerCase().contains(keyword.toLowerCase()) && visitedRecipes.add(url)) {
+                    keywordUrls.add(url);
+                }
             }
             hasNextPage = listingPage.goToNextPage();
         }
@@ -198,12 +199,12 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         executor.awaitTermination(1, TimeUnit.HOURS);
     }
 
-    // ---------------- Scraping Task (Optimized Single-Tab) ----------------
+    // ---------------- Scrape Task ----------------
     private void scrapeRecipeTask(String url, ExcelUtils.DietRules rules, String dietType) throws SQLException {
-        WebDriver driver = BrowserFactory.createDriver(cfg.headless); // per-task driver
+        WebDriver driver = BrowserFactory.createDriver(cfg.headless);
         try {
             log.info("[" + dietType + "] Scraping recipe: " + url);
-            driver.get(url); // single-tab navigation
+            driver.get(url);
 
             RecipeDetailsPage detailsPage = new RecipeDetailsPage(driver);
             Recipe r = detailsPage.scrapeRecipe();
@@ -213,15 +214,15 @@ public class RecipeScraperOptimizedTest extends BaseTest {
             log.info("[" + dietType + "] Scraped recipes so far: " + count);
 
         } finally {
-            BrowserFactory.quitDriver(); // always clean up
+            BrowserFactory.quitDriver();
         }
     }
 
-    // ---------------- Recipe Classification ----------------
+    // ---------------- Classification ----------------
     private void classifyAndStore(Recipe r, ExcelUtils.DietRules rules, String dietType) throws SQLException {
         Set<String> ingSet = new HashSet<>();
         if (r.Ingredients != null)
-            for (String ing : r.Ingredients) ingSet.add(ing.toLowerCase().trim());
+            r.Ingredients.forEach(ing -> ingSet.add(ing.toLowerCase().trim()));
 
         boolean hasElimination = rules.eliminate.stream().anyMatch(ingSet::contains);
         boolean hasAdd = rules.add.stream().anyMatch(ingSet::contains);
@@ -235,5 +236,32 @@ public class RecipeScraperOptimizedTest extends BaseTest {
             db.insertRecipe(elimTable, r);
             log.info("[" + dietType + "] Added to table " + elimTable + ": " + r.Recipe_Name);
         }
+    }
+
+    // ---------------- Run batch scraper ----------------
+    private int runScrapeBatch(List<String> urls, ExcelUtils.DietRules rules, String dietType,
+                               Set<String> visitedRecipes)
+            throws InterruptedException {
+
+        ExecutorService executor = Executors.newFixedThreadPool(cfg.threadPoolSize);
+        AtomicInteger batchCount = new AtomicInteger(0);
+
+        for (String url : urls) {
+            if (visitedRecipes.add(url)) {
+                executor.submit(() -> {
+                    try {
+                        scrapeRecipeTask(url, rules, dietType);
+                        batchCount.incrementAndGet();
+                        System.out.println("Scraped: " + url);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+        }
+
+        executor.shutdown();
+        executor.awaitTermination(30, TimeUnit.MINUTES);
+        return batchCount.get();
     }
 }
