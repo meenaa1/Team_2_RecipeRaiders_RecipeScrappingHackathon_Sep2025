@@ -95,39 +95,46 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         }
     }
 
-    // ---------------- FIRST_N Mode ----------------
+    // ---------------- FIRST_N Mode with Pagination ----------------
     private void runScraperLimitedParallel(String startUrl, ExcelUtils.DietRules rules, String dietType, int limit,
                                            Set<String> visitedRecipes)
             throws SQLException, InterruptedException, ExecutionException {
 
         WebDriver listingDriver = BrowserFactory.createDriver(cfg.headless);
+        listingDriver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(40));
+        listingDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+
         listingDriver.get(startUrl);
         RecipeListingPage listingPage = new RecipeListingPage(listingDriver);
 
-        List<String> recipeUrls = listingPage.getRecipeUrls(new ArrayList<>(visitedRecipes));
-        BrowserFactory.quitDriver();
+        boolean hasNextPage = true;
+        int totalScraped = 0;
 
-        ExecutorService executor = Executors.newFixedThreadPool(cfg.threadPoolSize);
-        List<Future<?>> futures = new ArrayList<>();
+        while (hasNextPage && totalScraped < limit) {
+            // Get recipes for this page
+            List<String> recipeUrls = listingPage.getRecipeUrls(new ArrayList<>(visitedRecipes));
 
-        int count = 0;
-        for (String url : recipeUrls) {
-            if (count >= limit) break;
-            if (!visitedRecipes.add(url)) continue;
-            count++;
+            if (!recipeUrls.isEmpty()) {
+                // Keep only up to "remaining" recipes
+                int remaining = limit - totalScraped;
+                List<String> batch = recipeUrls.size() > remaining
+                        ? recipeUrls.subList(0, remaining)
+                        : recipeUrls;
 
-            futures.add(executor.submit(() -> {
-                try {
-                    scrapeRecipeTask(url, rules, dietType);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }));
+                System.out.println("Found " + batch.size() + " recipes on this page...");
+                totalScraped += runScrapeBatch(batch, rules, dietType, visitedRecipes);
+                System.out.println("Total scraped so far = " + totalScraped);
+            }
+
+            // Stop if reached limit
+            if (totalScraped >= limit) break;
+
+            // Go to next page
+            hasNextPage = listingPage.goToNextPage();
         }
 
-        for (Future<?> f : futures) f.get();
-        executor.shutdown();
-        executor.awaitTermination(1, TimeUnit.HOURS);
+        listingDriver.quit();
+        log.info("✅ Finished FIRST_N mode. Total recipes scraped = " + totalScraped);
     }
 
     // ---------------- ALL Mode ----------------
@@ -157,7 +164,7 @@ public class RecipeScraperOptimizedTest extends BaseTest {
         }
 
         listingDriver.quit();
-        System.out.println("✅ Finished ALL mode. Total recipes scraped = " + totalScraped);
+       log.info("✅ Finished ALL mode. Total recipes scraped = " + totalScraped);
     }
 
     // ---------------- Keyword Mode ----------------
