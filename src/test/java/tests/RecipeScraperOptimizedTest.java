@@ -1,7 +1,7 @@
 package tests;
 
 import baseClass.BaseTest;
-import commons.BrowserFactory;
+import driverFactory.BrowserFactory;
 import commons.ExcelUtils;
 import commons.Recipe;
 import org.apache.logging.log4j.LogManager;

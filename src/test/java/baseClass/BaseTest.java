@@ -1,6 +1,6 @@
 package baseClass;
 
-import commons.BrowserFactory;
+import driverFactory.BrowserFactory;
 import commons.ConfigReader;
 import commons.DbManager;
 import org.openqa.selenium.WebDriver;
