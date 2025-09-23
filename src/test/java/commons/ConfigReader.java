@@ -15,7 +15,6 @@ public class ConfigReader {
     public String scraperKeyword;       // for KEYWORD
     public String scraperSingleRecipeUrl; // for SINGLE_URL
 
-
     public static ConfigReader load() throws IOException {
         Properties prop = new Properties();
         try (InputStream in = ConfigReader.class.getClassLoader().getResourceAsStream("config.properties")) {

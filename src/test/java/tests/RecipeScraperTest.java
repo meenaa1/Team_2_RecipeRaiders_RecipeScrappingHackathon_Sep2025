@@ -1,10 +1,13 @@
 package tests;
 
 import baseClass.BaseTest;
+import commons.DbManager;
 import commons.ExcelUtils;
 import commons.Recipe;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+import org.postgresql.Driver;
+import org.testng.Assert;
 import org.testng.annotations.*;
 import pages.RecipeDetailsPage;
 import pages.RecipeListingPage;
@@ -15,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class RecipeScraperTest extends BaseTest {
 
-    private ExcelUtils.DietRules lchfRules, lfvRules;
+	private ExcelUtils.DietRules lchfRules, lfvRules;
     private Set<String> visitedRecipes = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     @BeforeClass
@@ -27,6 +30,7 @@ public class RecipeScraperTest extends BaseTest {
         db.createTableIfNotExists("LCHF_elimination");
         db.createTableIfNotExists("LFV_add");
         db.createTableIfNotExists("LFV_elimination");
+        
     }
 
     @DataProvider(name = "dietData", parallel = true)
@@ -49,6 +53,7 @@ public class RecipeScraperTest extends BaseTest {
         System.out.println(addTable + ": " + db.getRowCount(addTable));
         System.out.println(elimTable + ": " + db.getRowCount(elimTable));
     }
+     
 
     private void runScraper(String startUrl, ExcelUtils.DietRules rules, String dietType) throws SQLException {
         WebDriver driver = getDriver();

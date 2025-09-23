@@ -64,9 +64,7 @@ public class RecipeListingPage {
         }
     }
 
-    /**
-     * Navigate to the next page if available
-     */
+    
     public boolean goToNextPage() {
         try {
             if (!elementsUtil.isElementDisplayed(nextBtnLocator)) {
@@ -91,5 +89,4 @@ public class RecipeListingPage {
             return false;
         }
     }
-
 }
